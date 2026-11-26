@@ -89,6 +89,23 @@ bool cOAL_Device::Init( cOAL_Init_Params& acParams )
 	cOAL_Stream::SetBufferCount(acParams.mlStreamingBufferCount);
 	LogMsg("",eOAL_LogVerbose_High, eOAL_LogMsg_Info, "\tSetting queue length to %d buffers\n",cOAL_Stream::GetBufferCount());
 
+	// HPL1Engine: make sure a stream's queue lasts at least twice as long as the
+	// time between refills, or the source runs dry and the stream stutters.
+	// Sized for 48 kHz 16-bit stereo (192000 bytes/s); lower rates get more slack.
+	if (acParams.mlUpdateFreq > 0)
+	{
+		const unsigned int lBytesPerSec = 48000 * 2 * 2;
+		const unsigned int lMinQueueBytes = 2 * lBytesPerSec / (unsigned int)acParams.mlUpdateFreq;
+		const unsigned int lCount = cOAL_Stream::GetBufferCount();
+		if (cOAL_Stream::GetBufferSize() * lCount < lMinQueueBytes)
+		{
+			unsigned int lSize = (lMinQueueBytes + lCount - 1) / lCount;
+			lSize = (lSize + 4095) & ~4095u; // whole 4 KB blocks
+			cOAL_Stream::SetBufferSize(lSize);
+			LogMsg("",eOAL_LogVerbose_Low, eOAL_LogMsg_Info, "\tBuffer size raised to %d bytes so streams outlast the %d ms refill interval\n", cOAL_Stream::GetBufferSize(), 1000/acParams.mlUpdateFreq);
+		}
+	}
+
 	
 	LogMsg("",eOAL_LogVerbose_Low, eOAL_LogMsg_Info, "Attempting to open device...\n" );
 	// Open the device, if fails return false
