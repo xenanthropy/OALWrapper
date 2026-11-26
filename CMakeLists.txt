@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.16)
 project (OALWrapper)
 
 set(OALWrapper_VERSION_MAJOR 1)
