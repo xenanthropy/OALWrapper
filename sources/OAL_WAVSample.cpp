@@ -38,15 +38,17 @@ using namespace std;
 bool cOAL_WAVSample::CreateFromFile(const wstring &asFilename)
 {
 	FILE *fileHandle = OpenFileW(asFilename, L"rb");
+	if (fileHandle == NULL)
+		return false;
 	fseek(fileHandle, 0, SEEK_END);
 	size_t pos = ftell(fileHandle);
 	fseek(fileHandle, 0, SEEK_SET);
 
 	void *buffer = malloc(pos);
 	
-	fread(buffer, pos, 1, fileHandle);
+	size_t readBytes = fread(buffer, 1, pos, fileHandle);
 	fclose(fileHandle);
-	bool result = CreateFromBuffer(buffer, pos);
+	bool result = (readBytes == pos) && CreateFromBuffer(buffer, pos);
 	free(buffer);
 
 	return result;
